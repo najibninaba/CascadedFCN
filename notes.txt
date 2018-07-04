@@ -1,0 +1,19 @@
+Mask Labeled Wound 3Class stats
+++++++++++++++++++++++++++++++++++++++++
+Total number of images: 336
+Image shape: (480, 640)
+max pixel value: 0.003921568859368563
+min pixel value: 0.0
+Showing image: SegMask_1.png
+Image size : (480, 640). 
+ Number of different classes and their counts for the image is given as {0: 209313, 1: 0, 2: 0, 3: 97887, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+Mask Labeled Tissue stats
+++++++++++++++++++++++++++++++++++++++++
+Total number of images: 336
+Image shape: (480, 640)
+max pixel value: 0.0313725508749485
+min pixel value: 0.0
+Showing image: Mask_1.png
+Image size : (480, 640). 
+ Number of different classes and their counts for the image is given as {0: 151700, 1: 52530, 2: 26928, 3: 72935, 4: 3008, 5: 99, 6: 0, 7: 0, 8: 0}
+
