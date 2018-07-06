@@ -1,5 +1,6 @@
 import os
 import time
+from scipy.misc import imread
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -44,7 +45,6 @@ def get_all_classes_and_counts(images, show=True):
     '''
 
     # TODO Add feature to take in unlabeled images
-    new_d = dict()
     d = dict()
     for i in images:
         for j in i:
@@ -53,12 +53,10 @@ def get_all_classes_and_counts(images, show=True):
                     d[k] = 1
                 else:
                     d[k] += 1
-    for i in range(len(d)):
-        new_d[i] = list(d.values())[i]
     if show:
         print("Number of different classes and their counts for the stack of {} images is given as {}".format(
-            len(images), new_d))
-    return new_d
+            len(images), d))
+    return d
 
 
 def get_classes_and_counts(image, images, show=True):
@@ -82,16 +80,13 @@ def get_classes_and_counts(image, images, show=True):
                 if k not in d:
                     d[k] = 0
 
-    new_d = dict()
     for i in image:
         for j in i:
             d[j] += 1
-    for i in range(len(d)):
-        new_d[i] = list(d.values())[i]
     if show:
         print("Image size : {}. \n Number of different classes and their counts for the image is given as {}".format(
-            image.shape, new_d))
-    return new_d
+            image.shape, d))
+    return d
 
 
 def get_all_pixel_levels(images):
@@ -142,40 +137,40 @@ if __name__ == '__main__':
     masks_v3_path = os.path.join(data_path, 'Masks_v3')
     masks_v3_names = os.listdir(masks_v3_path)
     masks_v3_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    masks_v3 = [plt.imread(os.path.join(masks_v3_path, x)) for x in masks_v3_names]
+    masks_v3 = [imread(os.path.join(masks_v3_path, x)) for x in masks_v3_names]
 
     # masks_seg_v3
     masks_seg_v3_path = os.path.join(data_path, 'Masks_Seg_v3')
     masks_seg_v3_names = os.listdir(masks_seg_v3_path)
     masks_seg_v3_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    masks_seg_v3 = [plt.imread(os.path.join(masks_seg_v3_path, x)) for x in masks_seg_v3_names]
+    masks_seg_v3 = [imread(os.path.join(masks_seg_v3_path, x)) for x in masks_seg_v3_names]
 
     # mask_labeled_full_modified
     mask_labeled_full_modified_path = os.path.join(data_path, 'Mask_Labeled_Full_Modified')
     mask_labeled_full_modified_names = os.listdir(mask_labeled_full_modified_path)
     mask_labeled_full_modified_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    mask_labeled_full_modified = [plt.imread(os.path.join(
+    mask_labeled_full_modified = [imread(os.path.join(
         mask_labeled_full_modified_path, x)) for x in mask_labeled_full_modified_names]
 
     # mask_labeled_wound_3class
     mask_labeled_wound_3class_path = os.path.join(data_path, 'Mask_Labeled_Wound_3Class')
     mask_labeled_wound_3class_names = os.listdir(mask_labeled_wound_3class_path)
     mask_labeled_wound_3class_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    mask_labeled_wound_3class = [plt.imread(os.path.join(
+    mask_labeled_wound_3class = [imread(os.path.join(
         mask_labeled_wound_3class_path, x)) for x in mask_labeled_wound_3class_names]
 
     # mask_labeled_tissue
     mask_labeled_tissue_path = os.path.join(data_path, 'Mask_Labeled_Tissue')
     mask_labeled_tissue_names = os.listdir(mask_labeled_tissue_path)
     mask_labeled_tissue_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    mask_labeled_tissue = [plt.imread(os.path.join(mask_labeled_tissue_path, x))
+    mask_labeled_tissue = [imread(os.path.join(mask_labeled_tissue_path, x))
                            for x in mask_labeled_tissue_names]
 
     # original image
     original_images_v3_path = os.path.join(data_path, 'Original_Images_v3')
     original_images_v3_names = os.listdir(original_images_v3_path)
     original_images_v3_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    original_images_v3 = [plt.imread(os.path.join(original_images_v3_path, x))
+    original_images_v3 = [imread(os.path.join(original_images_v3_path, x))
                           for x in original_images_v3_names]
 
     print("Finished loading images. Time taken: {}".format(time.time() - tic))

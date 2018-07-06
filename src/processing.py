@@ -1,26 +1,25 @@
-'''
-Run this script to process raw data into processed data
-
-Raw data:
-Labels in .txt file
-Images in  .jpg
-
-Processed data:
-Labels:
-    - Regions
-    - Surface
-    - Layers
-Images in .jpg
-
-all sorted with the right naming
-'''
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.misc import imread
 from utils import convert_labels, make_dir
 import cv2
 import time
+
+color2label_tissue = {(255, 0, 0): 1,  # Healthy_Granulation
+                      (0, 255, 0): 2,  # Infected
+                      (0, 0, 255): 3,  # Hypergranulation
+                      (125, 50, 0): 4,  # Unhealthy_granulation
+                      (255, 0, 255): 5,  # Epitialization
+                      (0, 0, 0): 6,  # Necrotic
+                      (255, 255, 0): 7,  # Slough
+                      (255, 255, 255): 0  # Background (includes Skin)
+                      }
+
+color2label_wound = {(0, 0, 0): 10,  # Wound
+                     (255, 216, 0): 8,  # Skin
+                     (255, 255, 255): 0  # Background
+                     }
 
 
 def create_processed_dir():
@@ -72,7 +71,7 @@ def create_processed_dir():
     common_names = [x.split('.')[0] for x in regions_names]
 
     for i in range(len(common_names)):
-        img_temp = plt.imread(os.path.join(raw_img_path, img_names[i]))
+        img_temp = imread(os.path.join(raw_img_path, img_names[i]))
         with open(os.path.join(raw_label_path, regions_names[i])) as f:
             reg_temp = convert_labels(f)
         with open(os.path.join(raw_label_path, surfaces_names[i])) as f:
