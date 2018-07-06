@@ -2,6 +2,7 @@ import os
 import numpy as np
 import json
 import pandas as pd
+from scipy.misc import imread
 
 import keras
 from keras.models import Model
