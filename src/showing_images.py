@@ -3,6 +3,7 @@ import time
 from scipy.misc import imread
 import matplotlib.pyplot as plt
 import numpy as np
+import collections
 
 
 def get_stats(images, names, num, show=True):
@@ -53,10 +54,11 @@ def get_all_classes_and_counts(images, show=True):
                     d[k] = 1
                 else:
                     d[k] += 1
+    od = collections.OrderedDict(sorted(d.items()))
     if show:
         print("Number of different classes and their counts for the stack of {} images is given as {}".format(
-            len(images), d))
-    return d
+            len(images), od))
+    return od
 
 
 def get_classes_and_counts(image, images, show=True):
@@ -83,10 +85,12 @@ def get_classes_and_counts(image, images, show=True):
     for i in image:
         for j in i:
             d[j] += 1
+
+    od = collections.OrderedDict(sorted(d.items()))
     if show:
         print("Image size : {}. \n Number of different classes and their counts for the image is given as {}".format(
-            image.shape, d))
-    return d
+            image.shape, od))
+    return od
 
 
 def get_all_pixel_levels(images):
@@ -145,13 +149,6 @@ if __name__ == '__main__':
     masks_seg_v3_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
     masks_seg_v3 = [imread(os.path.join(masks_seg_v3_path, x)) for x in masks_seg_v3_names]
 
-    # mask_labeled_full_modified
-    mask_labeled_full_modified_path = os.path.join(data_path, 'Mask_Labeled_Full_Modified')
-    mask_labeled_full_modified_names = os.listdir(mask_labeled_full_modified_path)
-    mask_labeled_full_modified_names.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    mask_labeled_full_modified = [imread(os.path.join(
-        mask_labeled_full_modified_path, x)) for x in mask_labeled_full_modified_names]
-
     # mask_labeled_wound_3class
     mask_labeled_wound_3class_path = os.path.join(data_path, 'Mask_Labeled_Wound_3Class')
     mask_labeled_wound_3class_names = os.listdir(mask_labeled_wound_3class_path)
@@ -186,15 +183,13 @@ if __name__ == '__main__':
     print("Masks Seg v3 stats")
     get_stats(masks_seg_v3, masks_seg_v3_names, num)
 
-    print("Masks Labeled Full Modified stats")
-    get_stats(mask_labeled_full_modified, mask_labeled_full_modified_names, num)
-    get_classes_and_counts(mask_labeled_full_modified[num], mask_labeled_full_modified)
     print("Mask Labeled Wound 3Class stats")
     get_stats(mask_labeled_wound_3class, mask_labeled_wound_3class_names, num)
-    get_classes_and_counts(mask_labeled_wound_3class[num], mask_labeled_full_modified)
+    get_classes_and_counts(mask_labeled_wound_3class[num], mask_labeled_wound_3class)
+
     print("Mask Labeled Tissue stats")
     get_stats(mask_labeled_tissue, mask_labeled_tissue_names, num)
-    get_classes_and_counts(mask_labeled_tissue[num], mask_labeled_full_modified)
+    get_classes_and_counts(mask_labeled_tissue[num], mask_labeled_tissue)
 
     # writing to file
     # TODO
@@ -214,10 +209,6 @@ if __name__ == '__main__':
     ax[0, 2].imshow(masks_seg_v3[num])
     ax[0, 2].set_axis_off()
     ax[0, 2].set_title("Masks_Seg_v3")
-
-    ax[1, 0].imshow(mask_labeled_full_modified[num])
-    ax[1, 0].set_axis_off()
-    ax[1, 0].set_title("Mask_Labeled_Full_Modified")
 
     ax[1, 1].imshow(mask_labeled_wound_3class[num])
     ax[1, 1].set_axis_off()

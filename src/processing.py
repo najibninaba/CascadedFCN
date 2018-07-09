@@ -6,20 +6,20 @@ from utils import convert_labels, make_dir
 import cv2
 import time
 
-color2label_tissue = {(255, 0, 0): 1,  # Healthy_Granulation
-                      (0, 255, 0): 2,  # Infected
-                      (0, 0, 255): 3,  # Hypergranulation
-                      (125, 50, 0): 4,  # Unhealthy_granulation
-                      (255, 0, 255): 5,  # Epitialization
-                      (0, 0, 0): 6,  # Necrotic
-                      (255, 255, 0): 7,  # Slough
-                      (255, 255, 255): 0  # Background (includes Skin)
-                      }
-
-color2label_wound = {(0, 0, 0): 10,  # Wound
-                     (255, 216, 0): 8,  # Skin
-                     (255, 255, 255): 0  # Background
-                     }
+# color2label_tissue = {(255, 0, 0): 1,  # Healthy_Granulation
+#                       (0, 255, 0): 2,  # Infected
+#                       (0, 0, 255): 3,  # Hypergranulation
+#                       (125, 50, 0): 4,  # Unhealthy_granulation
+#                       (255, 0, 255): 5,  # Epitialization
+#                       (0, 0, 0): 6,  # Necrotic
+#                       (255, 255, 0): 7,  # Slough
+#                       (255, 255, 255): 0  # Background (includes Skin)
+#                       }
+#
+# color2label_wound = {(0, 0, 0): 10,  # Wound
+#                      (255, 216, 0): 8,  # Skin
+#                      (255, 255, 255): 0  # Background
+#                      }
 
 
 def create_processed_dir():
