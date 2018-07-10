@@ -2,7 +2,7 @@ name: cascadedFCN
 channels:
   - defaults
 dependencies:
-- pip
+  - pip
   - numpy
   - pandas
   - matplotlib
