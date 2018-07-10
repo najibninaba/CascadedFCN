@@ -1,6 +1,6 @@
 import os
 
-DATA_PATH = '/Users/raimibinkarim/Desktop/ENet_data'
+DATA_PATH = os.path.join(os.getcwd(), 'data')
 
 for folder in os.listdir(DATA_PATH):
     if not os.path.isdir(os.path.join(DATA_PATH, folder)):
