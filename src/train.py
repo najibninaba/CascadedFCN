@@ -8,6 +8,7 @@ from scipy.misc import imread
 
 from metrics import f1 as f1_score
 from utils import make_dir
+from model import UNet
 
 import keras
 from keras.models import Model
@@ -19,47 +20,28 @@ from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
 
 
-def UNet(filters_dims, activation='relu', kernel_initializer='glorot_uniform', padding='same'):
-    inputs = Input((480, 640, 3))
-    new_inputs = inputs
-    conv_layers = []
-    # Encoding Phase
-    for i in range(len(filters_dims) - 1):
-        conv = Conv2D(filters_dims[i], 3, activation=activation, padding=padding,
-                      kernel_initializer=kernel_initializer)(new_inputs)
-        conv = Conv2D(filters_dims[i], 3, activation=activation, padding=padding,
-                      kernel_initializer=kernel_initializer)(conv)
-        conv_layers.append(conv)
-        new_inputs = MaxPooling2D(pool_size=(2, 2))(conv)
-        # op = BatchNormalization()(op)
+def trainGenerator(x_dir, y_dir, batch_size,  seed=1):
 
-    # middle phase
-    conv = Conv2D(filters_dims[-1], 3, activation=activation, padding=padding,
-                  kernel_initializer=kernel_initializer)(new_inputs)
-    conv = Conv2D(filters_dims[-1], 3, activation=activation, padding=padding,
-                  kernel_initializer=kernel_initializer)(conv)
-    new_inputs = Dropout(0.5)(conv)
+    image_datagen = ImageDataGenerator()
+    mask_datagen = ImageDataGenerator()
 
-    filters_dims.reverse()
-    conv_layers.reverse()
-
-    # Decoding Phase
-    for i in range(1, len(filters_dims)):
-        up = Conv2D(filters_dims[i], 3, activation=activation, padding=padding,
-                    kernel_initializer=kernel_initializer)(UpSampling2D(size=(2, 2))(new_inputs))
-        concat = merge([conv_layers[i-1], up], mode='concat', concat_axis=3)
-        conv = Conv2D(filters_dims[i], 3, activation=activation, padding=padding,
-                      kernel_initializer=kernel_initializer)(concat)
-        new_inputs = Conv2D(filters_dims[i], 3, activation=activation, padding=padding,
-                            kernel_initializer=kernel_initializer)(conv)
-    outputs = Conv2D(1, 1, activation='softmax', padding='same',
-                     kernel_initializer='glorot_uniform')(new_inputs)
-
-    model = Model(input=inputs, output=outputs, name='UNet')
-    model.compile(optimizer=Adam(lr=1e-4),
-                  loss='binary_crossentropy',
-                  metrics=['accuracy', 'mse', f1_score])
-    return model
+    image_generator = image_datagen.flow_from_directory(x_dir,
+                                                        (480, 640),
+                                                        class_mode=None,
+                                                        batch_size=batch_size,
+                                                        seed=seed)
+    mask_generator = mask_datagen.flow_from_directory(y_dir,
+                                                      (480, 640),
+                                                      color_mode='grayscale',
+                                                      classes=None,
+                                                      class_mode=None,
+                                                      batch_size=batch_size,
+                                                      seed=seed)
+    train_generator = zip(image_generator, mask_generator)
+    for (img, mask) in train_generator:
+        print(mask.shape)
+        img, mask = img, to_categorical(mask, 2)
+        yield (img, mask)
 
 
 def train(model, x_dir, y_dir, batch_size, epochs):
@@ -87,25 +69,9 @@ def train(model, x_dir, y_dir, batch_size, epochs):
 
     # getting image data generator
     seed = 1
-
-    image_datagen = ImageDataGenerator()
-    mask_datagen = ImageDataGenerator()
-
-    image_generator = image_datagen.flow_from_directory(x_dir,
-                                                        (480, 640),
-                                                        class_mode=None,
-                                                        batch_size=batch_size,
-                                                        seed=seed)
-    mask_generator = mask_datagen.flow_from_directory(y_dir,
-                                                      (480, 640),
-                                                      color_mode='grayscale',
-                                                      class_mode=None,
-                                                      batch_size=batch_size,
-                                                      seed=seed)
-    train_generator = zip(image_generator, mask_generator)
-
+    train_generator = trainGenerator(x_dir, y_dir, batch_size, seed)
     history = model.fit_generator(train_generator,
-                                  steps_per_epoch=2000,
+                                  steps_per_epoch=1000/batch_size,
                                   epochs=epochs)
 
     return history
