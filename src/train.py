@@ -20,10 +20,10 @@ from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
 
 
-def trainGenerator(x_dir, y_dir, batch_size,  seed=1):
+def myGenerator(x_dir, y_dir, batch_size,  seed=1):
 
-    image_datagen = ImageDataGenerator(validation_split=0.2)
-    mask_datagen = ImageDataGenerator(validation_split=0.2)
+    image_datagen = ImageDataGenerator()
+    mask_datagen = ImageDataGenerator()
 
     image_generator = image_datagen.flow_from_directory(x_dir,
                                                         (480, 640),
@@ -43,7 +43,7 @@ def trainGenerator(x_dir, y_dir, batch_size,  seed=1):
         yield (img, mask)
 
 
-def train(model, x_dir, y_dir, batch_size, epochs):
+def train(model, x_train_dir, y_train_dir, x_val_dir, y_val_dir, batch_size, epochs):
     # Running on multi GPU
     print('Tensorflow backend detected; Applying memory usage constraints')
     ss = K.tf.Session(config=K.tf.ConfigProto(gpu_options=K.tf.GPUOptions(allow_growth=True),
@@ -60,7 +60,7 @@ def train(model, x_dir, y_dir, batch_size, epochs):
     filepath = 'weights/' + model.name + '.{epoch:02d}-{loss:.2f}.hdf5'
     make_dir(filepath)
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1,
-                                 save_weights_only=True, save_best_only=True, mode='auto', period=1)
+                                 save_weights_only=False, save_best_only=True, mode='auto', period=1)
     tensor_board = TensorBoard(log_dir='logs/')
 
     # history = model.fit(x=x, y=y, batch_size=batch_size, epochs=epochs,
@@ -68,10 +68,15 @@ def train(model, x_dir, y_dir, batch_size, epochs):
 
     # getting image data generator
     seed = 1
-    train_generator = trainGenerator(x_dir, y_dir, batch_size, seed)
+    train_generator = myGenerator(x_train_dir, y_train_dir, batch_size, seed)
+    val_generator = myGenerator(x_val_dir, y_val_dir, batch_size, seed)
+
     history = model.fit_generator(train_generator,
+                                  callbacks=[checkpoint, tensor_board],
                                   steps_per_epoch=1000/batch_size,
-                                  epochs=epochs)
+                                  epochs=epochs,
+                                  validation_steps=1000/batch_size,
+                                  validation_data=val_generator)
 
     return history
 
@@ -93,42 +98,20 @@ if __name__ == '__main__':
         config = json.load(json_file)
 
     print("Loading data")
-    data_path = os.path.join(os.getcwd(), 'data', 'Augments_train')
-    Original_image_path = os.path.join(data_path, 'Original')
-    # Original_image_names = os.listdir(Original_image_path)
-    # Original_image_names.sort(key=lambda x: int(x.split('_')[2].split('.')[0]))
-    # Original_image_names = Original_image_names[:700]
+    data_path = os.path.join(os.getcwd(), 'data', 'Augments')
 
-    SegMask_path = os.path.join(data_path, 'SegMask_Wound_Bg')
-    # SegMask_names = os.listdir(SegMask_path)
-    # SegMask_names.sort(key=lambda x: int(x.split('_')[4].split('.')[0]))
-    # SegMask_names = SegMask_names[:700]
+    image_train_path = os.path.join(data_path, 'train', 'Original')
+    mask_train_path = os.path.join(data_path, 'train', 'SegMask_Wound_Bg')
 
-    # Original_images = np.array([imread(os.path.join(Original_image_path, x))
-    #                             for x in Original_image_names])
-    # SegMasks = np.array([imread(os.path.join(SegMask_path, x)) for x in SegMask_names])
+    image_val_path = os.path.join(data_path, 'val', 'Original')
+    mask_val_path = os.path.join(data_path, 'val', 'SegMask_Wound_Bg')
 
-    # Checking imports
-    # Check labeling
-    # assert list(map(lambda x: x.split('_')[4], SegMask_names)) == list(
-    #     map(lambda x: x.split('_')[2], Original_image_names)), "Original and Masks are not in sync. Please recheck"
-
-    # Check shape
-    # assert list(map(lambda x: x.shape[:2], Original_images)
-    #             ) == list(map(lambda x: x.shape[:2], SegMasks)), "Original and Masks do not have the same WxH. Please recheck"
-
-    # transformed_images, transformed_masks = resizing(
-    #     image_path, mask_path, verbose=False, plot=False)
-
-    # transformed_images = np.array(transformed_images)
-    # transformed_masks = np.array(transformed_masks)
-    # print("Performing one hot encoding")
-    # SegMasks = to_categorical(SegMasks, 2)
-    # print("SegMasks shape: ", SegMasks.shape)
     print("Initializing training instance")
 
     train(model=model,
-          x_dir=Original_image_path,
-          y_dir=SegMask_path,
+          x_train_dir=image_train_path,
+          y_train_dir=mask_train_path,
+          x_val_dir=image_val_path,
+          y_val_dir=mask_val_path,
           batch_size=config["batch_size"],
           epochs=config["epochs"])
