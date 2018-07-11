@@ -22,8 +22,8 @@ from keras.preprocessing.image import ImageDataGenerator
 
 def trainGenerator(x_dir, y_dir, batch_size,  seed=1):
 
-    image_datagen = ImageDataGenerator()
-    mask_datagen = ImageDataGenerator()
+    image_datagen = ImageDataGenerator(validation_split=0.2)
+    mask_datagen = ImageDataGenerator(validation_split=0.2)
 
     image_generator = image_datagen.flow_from_directory(x_dir,
                                                         (480, 640),
@@ -39,7 +39,6 @@ def trainGenerator(x_dir, y_dir, batch_size,  seed=1):
                                                       seed=seed)
     train_generator = zip(image_generator, mask_generator)
     for (img, mask) in train_generator:
-        print(mask.shape)
         img, mask = img, to_categorical(mask, 2)
         yield (img, mask)
 
