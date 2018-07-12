@@ -30,7 +30,6 @@ tqdm.monitor_interval = 0 # to silent warnings
 # Specify constants and directories
 # pylint: disable=line-too-long
 DIR_LAYER2_ORIG = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original-cropped/"
-DIR_LAYER2_MASK = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-cropped/"
 FILENAME_ORIG_HEAD = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original/Wound_"
 FILENAME_MASK_HEAD = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-class-7/Wound_"
 MIN_AREA = 50
