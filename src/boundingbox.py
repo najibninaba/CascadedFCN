@@ -1,13 +1,17 @@
-"""
-Using OpenCV, get bounding box / ROI. 
+
+"""Using OpenCV, get bounding box for region of interest. 
 1) Load mask
 2) Get contours
-finding contours is like finding white object from black background. So remember, object to be found should be white and background should be black.
-3) Get bounding rectangle for a particular contour
-4) Draw the rectangl
+For every contour,
+3) Get bounding (rotated) rectangle
+4) Rotate the rectangle such that it is upright
+5) Crop the parts outside the bounding box
 
-img -> img_cropped
+Pipeline:
+img -> img_cropped -> img_cropped_rotated
 mask -> mask_gray -> mask_grayinv -> mask_contour
+TODO:
+- add padding
 """
 import cv2
 import numpy as np
@@ -15,7 +19,6 @@ from scipy.misc import imread, imsave
 import matplotlib
 matplotlib.use('TkAgg') # so that I can close the plot window
 import matplotlib.pyplot as plt
-
 
 def eagerplot(image):
     """
@@ -37,13 +40,13 @@ def add_padding(vertices):
 
     return vertices
 
-WOUND_IDX = 207
+WOUND_IDX = 100
 ORIGINAL_EXAMPLE = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original/Wound_" + str(WOUND_IDX) + ".jpg"
 MASK_EXAMPLE = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-class-7/Wound_" + str(WOUND_IDX) + ".png"
 MIN_AREA = 100
-BOX_COLOR = (70, 173, 212) # color for bounding box is light neon blue
+BOX_COLOR = (70, 173, 212) 
 PADDING = 4 # pixels
-mult = 1.2
+mult = 1
 
 # Load original
 img = imread(ORIGINAL_EXAMPLE, mode="RGB")
@@ -128,11 +131,6 @@ for contour in contours:
 
 
 
-# Crop image at boundary
-
-
-# eagerplot(img)
-
 fig, ax = plt.subplots(1,3)
 ax[0].imshow(mask_bin)
 ax[0].set_axis_off()
@@ -145,8 +143,6 @@ ax[2].set_axis_off()
 
 plt.show()
 cv2.waitKey(0)
-
-# Save file
 
 
 # if __name__ == "__main__":
