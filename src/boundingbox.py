@@ -8,30 +8,36 @@ For every contour,
 5) Crop the parts outside the bounding box
 
 Pipeline:
-img -> img_cropped -> img_cropped_rotated
+orig -> orig_cropped -> orig_cropped_rotated
 mask -> mask_gray -> mask_grayinv -> mask_contour
+
 TODO:
 - add padding
-- pipeline for multiple images
 - min_area to be considered as boundingbox
+- artifacts created when bounding box touches edge of image
 """
+import os
+import sys
 import cv2
 import numpy as np
 from scipy.misc import imread, imsave
 import matplotlib
-matplotlib.use('TkAgg') # so that I can close the plot window
+matplotlib.use('TkAgg') # so that you can close the plot window
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+tqdm.monitor_interval = 0 # to silent warnings
 
 # Specify constants and directories
-WOUND_IDX = 100
-EXAMPLE_ORIG = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original/Wound_" + str(WOUND_IDX) + ".jpg"
-EXAMPLE_MASK = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-class-7/Wound_" + str(WOUND_IDX) + ".png"
-DIR_L2_ORIG  = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original/Wound_" + str(WOUND_IDX) + ".jpg"
-DIR_L2_MASK  = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-class-7/Wound_" + str(WOUND_IDX) + ".png"
-MIN_AREA = 100
-BOX_COLOR = (70, 173, 212) 
+# pylint: disable=line-too-long
+DIR_LAYER2_ORIG = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original-cropped/"
+DIR_LAYER2_MASK = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-cropped/"
+FILENAME_ORIG_HEAD = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/original/Wound_"
+FILENAME_MASK_HEAD = "/Users/raimibinkarim/Desktop/CascadedFCN-Data/masks-class-7/Wound_"
+MIN_AREA = 50
+BOX_COLOR = (70, 173, 212)
 PADDING = 4 # pixels
 ZOOM = 1.2
+# pylint: enable=line-too-long
 
 def eagerplot(image):
     """
@@ -53,16 +59,27 @@ def add_padding(vertices):
 
     return vertices
 
-def get_bounding_box():
+def get_bounding_box(idx=-1):
     """
     Get bounding box for one wound (original and mask), identified with idx
     And save it to DIR_L2_ORIG & DIR_L2_MASK directories
     """
+    # If no index specified, assume this function is used for demo purposes.
+    if idx == -1:
+        idx = np.random.randint(1, 336+1) # 336 wounds
+
+    # print("Processing Wound " + str(idx))
+
+    # pylint: disable=line-too-long
+    filename_orig = FILENAME_ORIG_HEAD + str(idx) + ".jpg"
+    filename_mask = FILENAME_MASK_HEAD + str(idx) + ".png"
+    # pylint: enable=line-too-long
+
     # Load original
-    img = imread(EXAMPLE_ORIG, mode="RGB")
+    orig = imread(filename_orig, mode="RGB")
 
     # Load mask
-    mask = imread(EXAMPLE_MASK, mode="RGB")
+    mask = imread(filename_mask, mode="RGB")
 
     # Convert mask to grayscale
     mask_gray = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
@@ -71,11 +88,11 @@ def get_bounding_box():
     mask_grayinv = 255 - mask_gray
 
     # Convert mask to binary mask
-    retval, mask_bin = cv2.threshold(src=mask_grayinv, thresh=0, maxval=1, type=cv2.THRESH_BINARY)
+    _, mask_bin = cv2.threshold(src=mask_grayinv, thresh=0, maxval=1, type=cv2.THRESH_BINARY)
 
     # Get contours based on binary image
-    mask_contour, contours, hierarchy = cv2.findContours(mask_bin, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE, )
-    print("There are " + str(len(contours)) + " contour(s).")
+    mask_contour, contours, _ = cv2.findContours(mask_bin, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+    # print("There are " + str(len(contours)) + " contour(s).")
 
     for contour in contours:
 
@@ -87,19 +104,21 @@ def get_bounding_box():
         # x, y, w, h = cv2.boundingRect(contour)
 
         # Draws an up-right rectangle on original image
-        # cv2.rectangle(img, pt1=(x-PADDING,y-PADDING), pt2=(x+w+PADDING+1,y+h+PADDING+1), color=BOX_COLOR, thickness=3)
+        # cv2.rectangle(orig, pt1=(x-PADDING,y-PADDING), pt2=(x+w+PADDING+1,y+h+PADDING+1), color=BOX_COLOR, thickness=3)
         # cv2.rectangle(mask_gray, pt1=(x-PADDING,y-PADDING), pt2=(x+w+PADDING+1,y+h+PADDING+1), color=BOX_COLOR, thickness=3)
 
         # Get bounding rotated rectangle
         rect = cv2.minAreaRect(contour) # rect = (x,y,w,h,theta) where (x,y) is the centre point and theta is the angle of rotation
         box  = cv2.boxPoints(rect) 
         box  = np.int0(box)
+        area = cv2.contourArea(contour)
+        # print("This contour has area " + str(area))
 
         # Draws a rotated rectangle on original image
-        cv2.drawContours(img, contours=[box], contourIdx=0, color=BOX_COLOR, thickness=3)
+        cv2.drawContours(orig, contours=[box], contourIdx=0, color=BOX_COLOR, thickness=3)
         cv2.drawContours(mask_gray, contours=[box], contourIdx=0, color=BOX_COLOR, thickness=3)
-        
-        # Get coordinates, w, h, angle
+
+        # Get coordinates, width, height, angle for cropping and rotating
         W = rect[1][0]
         H = rect[1][1]
         Xs = [i[0] for i in box]
@@ -117,41 +136,61 @@ def get_bounding_box():
 
         ctr  = (int((x1+x2)/2), int((y1+y2)/2))
         size = (int(ZOOM*(x2-x1)), int(ZOOM*(y2-y1)))
-        # cv2.circle(img, ctr, 10, BOX_COLOR, -1) # again this was mostly for debugging purposes
+        # cv2.circle(orig, ctr, 10, BOX_COLOR, -1) # again this was mostly for debugging purposes
 
         # Rotate
         M = cv2.getRotationMatrix2D(center=(size[0]/2, size[1]/2), angle=angle, scale=1.0)
 
         # Retrieve pixel rectangle
-        img_cropped = cv2.getRectSubPix(img, patchSize=size, center=ctr)
-        eagerplot(img_cropped)
+        orig_cropped = cv2.getRectSubPix(orig, patchSize=size, center=ctr)
+        # eagerplot(orig_cropped)
 
         # Rotate
-        img_cropped = cv2.warpAffine(img_cropped, M=M, dsize=size)
-        eagerplot(img_cropped)
+        orig_cropped = cv2.warpAffine(orig_cropped, M=M, dsize=size)
+        # eagerplot(orig_cropped)
 
         # Crop out artifacts
         croppedW = W if not rotated else H 
         croppedH = H if not rotated else W
-        img_cropped_rotated = cv2.getRectSubPix(img_cropped, (int(croppedW*ZOOM), int(croppedH*ZOOM)), (size[0]/2, size[1]/2))
-        eagerplot(img_cropped_rotated)
+        orig_cropped_rotated = cv2.getRectSubPix(orig_cropped, (int(croppedW*ZOOM), int(croppedH*ZOOM)), (size[0]/2, size[1]/2))
+        # eagerplot(orig_cropped_rotated)
 
         # Add padding
         # box = addPadding(box)
 
+    # Save image
+    imsave(DIR_LAYER2_ORIG + "Wound_" + str(idx) + ".jpg", orig)
 
-    fig, ax = plt.subplots(1,3)
-    ax[0].imshow(mask_bin)
-    ax[0].set_axis_off()
+    # Plot mask, orig, orig_cropped_rotated
+    # _, ax = plt.subplots(1,3)
+    # ax[0].imshow(mask_bin)
+    # ax[1].imshow(orig)
+    # ax[2].imshow(orig_cropped_rotated)
+    # ax[0].set_axis_off()
+    # ax[1].set_axis_off()
+    # ax[2].set_axis_off()
 
-    ax[1].imshow(img)
-    ax[1].set_axis_off()
+    # plt.show()
+    # cv2.waitKey(0)
 
-    ax[2].imshow(img_cropped_rotated)
-    ax[2].set_axis_off()
+def process_layer1_output():
+    """
+    Takes in mask and orig images and output cropped originals to a directory
+    """
+    # Create directories if they do not exist
+    if not os.path.isdir(DIR_LAYER2_ORIG):
+        os.mkdir(DIR_LAYER2_ORIG)
 
-    plt.show()
-    cv2.waitKey(0)
+    if not os.path.isdir(DIR_LAYER2_MASK):
+        os.mkdir(DIR_LAYER2_MASK)
+    
+    # Get cropped images for all
+    num_examples = 336
+    for i in tqdm(range(1, num_examples+1)):
+        get_bounding_box(i)
 
 if __name__ == "__main__":
-    get_bounding_box()
+    if len(sys.argv) > 1 and sys.argv[1] == "demo":
+        get_bounding_box()
+    else:
+        process_layer1_output()
