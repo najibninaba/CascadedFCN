@@ -1,16 +1,20 @@
 
-"""Using OpenCV, get bounding box for region of interest. 
-1) Load mask
-2) Get contours
-For every contour,
-3) Get bounding (rotated) rectangle
-4) Rotate the rectangle such that it is upright
-5) Crop the parts outside the bounding box
+"""Using OpenCV, get bounding box for region of interest.
+1) Load masktruth (3-class mask)
+2) Transform masktruth to 2-class for contour detection
+3) Perform dilation on masktruth
+4) Use masktruth to get contours. For every contour, do the following for orig, masknet1 and masktruth
+    a) Get bounding (upright) rectangle
+    b) Remove small contours
+    c) Crop
+    d) Save
 
 Pipeline:
-orig -> orig_cropped -> orig_cropped_rotated
-mask -> mask_gray -> mask_grayinv -> mask_contour
+orig      -> orig_cropped   -> orig_contour
+mask3out1  -> mask3out1_gray -> mask3out1_grayinv  -> mask3out1_contour
+mask9truth -> mask9ruth_gray -> mask9truth_grayinv -> mask9truth_contour
 
+origcontour_1.png
 """
 import os
 import sys
@@ -33,6 +37,7 @@ MIN_AREA = 50
 BOX_COLOR = (70, 173, 212)
 PADDING = 4 # pixels
 ZOOM = 1.2
+KERNEL_DILATION = np.ones((11, 11))
 # pylint: enable=line-too-long
 
 def eagerplot(image):
@@ -41,19 +46,6 @@ def eagerplot(image):
     """
     plt.imshow(image, cmap="gray")
     plt.show()
-
-def add_padding(vertices):
-    """
-    TODO: Add padding. 4 pairs of coordinates.
-    """
-    x0, y0 = vertices[0]
-    x1, y1 = vertices[1]
-    x2, y2 = vertices[2]
-    x3, y3 = vertices[3]
-
-    print(x3)
-
-    return vertices
 
 def get_bounding_box(idx=-1):
     """
@@ -155,17 +147,20 @@ def get_bounding_box(idx=-1):
         # Add padding
         # box = addPadding(box)
 
+        # Dilate mask
+        mask_dilated = cv2.dilate(mask_gray, kernel=KERNEL_DILATION)
+
     # Save image
     imsave(DIR_LAYER2_ORIG + "Wound_" + str(idx) + ".jpg", orig)
 
     # Plot mask, orig, orig_cropped_rotated
-    _, ax = plt.subplots(1,2)
+    _, ax = plt.subplots(1,3)
     ax[0].imshow(mask_gray)
     ax[1].imshow(orig)
-    # ax[2].imshow(orig_cropped_rotated)
+    ax[2].imshow(mask_dilated)
     ax[0].set_axis_off()
     ax[1].set_axis_off()
-    # ax[2].set_axis_off()
+    ax[2].set_axis_off()
 
     plt.show()
     cv2.waitKey(0)
