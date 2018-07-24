@@ -1,5 +1,10 @@
 
-"""Using OpenCV, get bounding box for region of interest.
+"""Using OpenCV, get bounding box for region of interest. 
+Two occasions where this code will be used:
+    a) training: 
+        Need to create mask3_grey_bin
+    b) inference:
+
 1) Load masktruth (3-class mask)
 2) Transform masktruth to 2-class for contour detection
 3) Perform dilation on masktruth
