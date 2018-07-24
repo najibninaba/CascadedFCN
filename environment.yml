@@ -2,11 +2,13 @@ name: cascadedFCN
 channels:
   - defaults
 dependencies:
+  - pip
   - numpy
   - pandas
   - matplotlib
   - tensorflow
-  #- tensorflow-gpu
+  - tensorflow-gpu
+  # - Augmentor # pip install cause conda dont have
   - keras=2.1.6
   - python
   - opencv

@@ -100,7 +100,6 @@ def augment(network=1, debugging=0, batch_size=BATCH_SIZE):
             x, y = next(image_batch)
             print(len(x))
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -131,4 +130,3 @@ if __name__ == '__main__':
         debugging=FLAGS.debugging_mode,
         batch_size=FLAGS.batch_size
     )
-
