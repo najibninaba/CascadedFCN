@@ -98,7 +98,11 @@ def augment(network=1, debugging=0, batch_size=BATCH_SIZE):
     
         while True:
             x, y = next(image_batch)
-            print(len(x))
+            _, ax = plt.subplots(1,2)
+            ax[0].imshow(x)
+            ax[1].imshow(y)
+            ax[0].set_axis_off()
+            ax[1].set_axis_off()
 
 
 if __name__ == '__main__':
