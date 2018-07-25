@@ -104,7 +104,6 @@ def augment(network=1, debugging=0, batch_size=BATCH_SIZE):
             ax[0].set_axis_off()
             ax[1].set_axis_off()
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -135,4 +134,3 @@ if __name__ == '__main__':
         debugging=FLAGS.debugging_mode,
         batch_size=FLAGS.batch_size
     )
-
