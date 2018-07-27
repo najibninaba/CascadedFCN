@@ -39,6 +39,8 @@ DIR_MASK3 = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-3/"
 DIR_MASK9 = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-9/"
 DIR_ORIG_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original-cropped/"
 DIR_MASK9_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-9-cropped/"
+DIR_INF = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/inference/"
+
 DIR_OUTPUT = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/augments/" # for debugging
 
 MIN_AREA = 50
@@ -46,7 +48,6 @@ BOX_COLOR = (70, 173, 212)
 PADDING = 4 # pixels
 ZOOM = 1.2
 KERNEL_DILATION = np.ones((11, 11))
-# pylint: enable=line-too-long
 
 def eagerplot(image):
     """
@@ -55,7 +56,7 @@ def eagerplot(image):
     plt.imshow(image, cmap="gray")
     plt.show()
 
-def get_bounding_box(idx=-1):
+def get_bounding_box_for_one_pair(training=True, idx=-1):
     """
     Get bounding box for one wound (original and mask), identified with idx
     And save it to DIR_L2_ORIG & DIR_L2_MASK directories
@@ -63,44 +64,52 @@ def get_bounding_box(idx=-1):
     # If no index specified, assume this function is used for demo purposes.
     if idx == -1:
         idx = np.random.randint(1, 336+1) # 336 wounds
-    print(idx)
 
-    # pylint: disable=line-too-long
-    filename_orig = DIR_ORIG  + "Wound_" + str(idx) + ".png"
-    filename_mask = DIR_MASK9 + "Wound_" + str(idx) + ".png"
-    # pylint: enable=line-too-long
+    if training:
+        filename_orig  = DIR_ORIG  + "Wound_" + str(idx) + ".png"
+        filename_mask  = DIR_MASK9 + "Wound_" + str(idx) + ".png"
+        filename_guide = DIR_MASK3 + "Wound_" + str(idx) + ".png"
 
-    # Load original
-    orig = imread(filename_orig, mode="RGB")
+    # Load original, mask and guide
+    orig  = imread(filename_orig,  mode="RGB")
+    mask  = imread(filename_mask,  mode="RGB")
+    guide = imread(filename_guide, mode="RGB")
 
-    # Load mask
-    mask = imread(filename_mask, mode="RGB")
+    # Dilate mask
+    guide_dilated = cv2.dilate(guide, kernel=KERNEL_DILATION)
 
     # Convert mask to grayscale
-    mask_gray = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
-
-    # Invert mask
-    mask_grayinv = 255 - mask_gray
+    guide_gray = cv2.cvtColor(guide_dilated, cv2.COLOR_RGB2GRAY)
 
     # Convert mask to binary mask
-    _, mask_bin = cv2.threshold(src=mask_grayinv, thresh=0, maxval=1, type=cv2.THRESH_BINARY)
+    _, guide_bin = cv2.threshold(src=guide_gray, thresh=0, maxval=1, type=cv2.THRESH_BINARY)
+    
+    # Invert
+    guide_bin = 255 - guide_bin
 
     # Get contours based on binary image
-    mask_contour, contours, _ = cv2.findContours(mask_bin, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
-    print("There are " + str(len(contours)) + " contour(s).")
+    _, contours, _ = cv2.findContours(guide_bin, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+    # print("There are " + str(len(contours)) + " contour(s).")
+
+    num_null_contours = 0
 
     for contour in contours:
 
         # Ignore contours less than MIN_AREA
         if cv2.contourArea(contour) < MIN_AREA:
-            continue
+            num_null_contours += 1 
+            continue 
 
-        # Get bounding rectangle
+        # Get dimensions for bounding rectangle
         x, y, w, h = cv2.boundingRect(contour)
 
-        # Draws an up-right rectangle on original image
+        # Draws an up-right rectangle on original image. For debugging
         cv2.rectangle(orig, pt1=(x-PADDING,y-PADDING), pt2=(x+w+PADDING+1,y+h+PADDING+1), color=BOX_COLOR, thickness=3)
-        cv2.rectangle(mask_gray, pt1=(x-PADDING,y-PADDING), pt2=(x+w+PADDING+1,y+h+PADDING+1), color=BOX_COLOR, thickness=3)
+        cv2.rectangle(mask, pt1=(x-PADDING,y-PADDING), pt2=(x+w+PADDING+1,y+h+PADDING+1), color=BOX_COLOR, thickness=3)     
+
+        # Crop image
+        orig_cropped = orig[y:y+h, x:x+w]
+        mask_cropped = mask[y:y+h, x:x+w]
 
         # Get bounding rotated rectangle
         # rect = cv2.minAreaRect(contour) # rect = (x,y,w,h,theta) where (x,y) is the centre point and theta is the angle of rotation
@@ -130,11 +139,10 @@ def get_bounding_box(idx=-1):
         # else:
         #     rotated = False
 
+        # Rotate
         # ctr  = (int((x1+x2)/2), int((y1+y2)/2))
         # size = (int(ZOOM*(x2-x1)), int(ZOOM*(y2-y1)))
         # cv2.circle(orig, ctr, 10, BOX_COLOR, -1) # again this was mostly for debugging purposes
-
-        # Rotate
         # M = cv2.getRotationMatrix2D(center=(size[0]/2, size[1]/2), angle=angle, scale=1.0)
 
         # Retrieve pixel rectangle
@@ -154,23 +162,22 @@ def get_bounding_box(idx=-1):
         # Add padding
         # box = addPadding(box)
 
-        # Dilate mask
-        mask_dilated = cv2.dilate(mask_gray, kernel=KERNEL_DILATION)
-
-    # Save image
-    imsave(DIR_ORIG_CROPPED + "Wound_" + str(idx) + ".jpg", orig)
+    # Save
+    if len(contours)-num_null_contours > 0:
+        imsave(DIR_ORIG_CROPPED  + "Wound_" + str(idx) + ".jpg", orig_cropped)
+        imsave(DIR_MASK9_CROPPED + "Wound_" + str(idx) + ".jpg", mask_cropped)
 
     # Plot mask, orig, orig_cropped_rotated
-    _, ax = plt.subplots(1,3)
-    ax[0].imshow(mask_gray)
-    ax[1].imshow(orig)
-    ax[2].imshow(mask_dilated)
-    ax[0].set_axis_off()
-    ax[1].set_axis_off()
-    ax[2].set_axis_off()
+    # _, ax = plt.subplots(1,3)
+    # ax[0].imshow(mask_gray)
+    # ax[1].imshow(orig)
+    # ax[2].imshow(mask_dilated)
+    # ax[0].set_axis_off()
+    # ax[1].set_axis_off()
+    # ax[2].set_axis_off()
 
-    plt.show()
-    cv2.waitKey(0)
+    # plt.show()
+    # cv2.waitKey(0)
 
 def process_layer1_output():
     """
@@ -185,10 +192,10 @@ def process_layer1_output():
     # Get cropped images for all
     num_examples = 336
     for i in tqdm(range(1, num_examples+1)):
-        get_bounding_box(i)
+        get_bounding_box_for_one_pair(idx=i)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "demo":
-        get_bounding_box()
+        get_bounding_box_for_one_pair()
     else:
         process_layer1_output()
