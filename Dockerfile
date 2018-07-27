@@ -1,14 +1,4 @@
-FROM ubuntu:latest
+FROM nvcr.io/nvidia/tensorflow:18.06-py3
 
-RUN apt-get update -y \
-    && apt-get install -y python-pip \
-    python-dev \
-    build-essential \
-    python-tk 
-WORKDIR /CascadedFCN
-
-COPY . /CascadedFCN
-RUN pip install -r requirements.txt
-EXPOSE 5000
-CMD ["/usr/bin/python", "src/train.py"]
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir tensorflow==1.8.0 numpy==1.14.0 matplotlib Augmentor keras==2.1.6 opencv-python pillow bokeh scipy==1.0.0
 
