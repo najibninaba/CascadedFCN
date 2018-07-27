@@ -64,10 +64,9 @@ def get_bounding_box(idx=-1):
     if idx == -1:
         idx = np.random.randint(1, 336+1) # 336 wounds
     print(idx)
-    # print("Processing Wound " + str(idx))
 
     # pylint: disable=line-too-long
-    filename_orig = DIR_ORIG + "Wound_" + str(idx) + ".png"
+    filename_orig = DIR_ORIG  + "Wound_" + str(idx) + ".png"
     filename_mask = DIR_MASK9 + "Wound_" + str(idx) + ".png"
     # pylint: enable=line-too-long
 
