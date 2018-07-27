@@ -27,6 +27,7 @@ TODO
 1. `rename-files.py` to clean file names
 2. `augmentor.py` to augment images for training
 3. `boundingbox.py` to create cropped images for training and testing
+4. `find . -name '*.DS_Store' -type f -delete` to remove .DS_Store files generated my macOS
 
 ## What is Cascaded FCN
 
