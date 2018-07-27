@@ -18,27 +18,15 @@ Notes:
 - Load every batch of 336 pairs of images into memory; don't save to disk
 """
 
+from PIL import Image
 import numpy as np
 import Augmentor
 import argparse
 import matplotlib
 matplotlib.use('TkAgg') # so that you can close the plot window
 import matplotlib.pyplot as plt
-from tqdm import tqdm
-from PIL import Image
 import glob
-
-
-DIR_ORIG = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original/"
-DIR_MASK3 = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-3/"
-DIR_ORIG_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original-cropped/"
-DIR_MASK9_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-9-cropped/"
-DIR_OUTPUT = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/augments/" # for debugging
-BATCH_SIZE = 336
-
-FILE_ORIG = glob.glob(DIR_ORIG + '*.png')
-FILE_MASK3 = glob.glob(DIR_MASK3 + '*.png')
-
+from scipy.misc import imread
 
 def eagerplot(image):
     """
@@ -47,32 +35,45 @@ def eagerplot(image):
     plt.imshow(image, cmap="gray")
     plt.show()
 
-def augment(network=1, debugging=0, batch_size=BATCH_SIZE): 
+def augment(network=1, debugging=0, batch_size=1): 
     """Augments paired images (orig & mask) and saves in memory
     Args:
         network: specify which network (1 or 2)
     Returns:
-
+        a batch of images with size batch_size
     """
 
+    DIR_ORIG = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original/"
+    DIR_MASK3 = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-3/"
+    DIR_ORIG_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original-cropped/"
+    DIR_MASK9_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-9-cropped/"
+    DIR_OUTPUT = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/augments/" # for debugging
+
     if network == 1:
-        orig = DIR_ORIG
-        mask = DIR_MASK3
+        dir_orig = DIR_ORIG
+        dir_mask = DIR_MASK3
     elif network == 2:
-        orig = DIR_ORIG_CROPPED
-        mask = DIR_MASK9_CROPPED
+        dir_orig = DIR_ORIG_CROPPED
+        dir_mask = DIR_MASK9_CROPPED
 
-    # Specify location of originals
+    files_orig = glob.glob(dir_orig + '*.png')
+    files_mask = glob.glob(dir_mask + '*.png')
+
     if debugging:
-        pipe = Augmentor.Pipeline(source_directory=orig, output_directory=DIR_OUTPUT)
+         # Specify location of originals
+        pipe = Augmentor.Pipeline(source_directory=dir_orig, output_directory=DIR_OUTPUT)
+         # Specify location of masks
+        pipe.ground_truth(dir_mask)
     else:    
-        # TODO DONT GENERATE
-        pipe = Augmentor.Pipeline()
-        x = np.array([np.array(Image.open(fname)) for fname in FILE_ORIG])
-        y = np.array([np.array(Image.open(fname)) for fname in FILE_MASK3])
+        from keras import backend as K
+        K.set_image_data_format('channels_last')
 
-    # Specify location of masks
-    pipe.ground_truth(mask)
+        pipe = Augmentor.Pipeline()
+        # pipe = Augmentor.Pipeline(source_directory=dir_orig, output_directory=DIR_OUTPUT)
+        # pipe.ground_truth(dir_mask)
+        # orig = [imread(fname).astype('uint8') for fname in files_orig]
+        orig = np.array([np.array(Image.open(fname)) for fname in files_orig])
+        mask = [imread(fname).astype('uint8') for fname in files_mask]
 
     # 1) Rotate and automatically zoom (to avoid artifacts)
     pipe.rotate(probability=0.5, max_left_rotation=25, max_right_rotation=25)
@@ -92,17 +93,17 @@ def augment(network=1, debugging=0, batch_size=BATCH_SIZE):
         pipe.process()
     else:
         # Save in memory
-        # Should return a batch of 336 images
-        # pipe.process()
-        image_batch = pipe.keras_generator_from_array(images=x,labels=y,batch_size=batch_size)
+        # image_batch = pipe.keras_generator(batch_size=batch_size)
+        image_batch = pipe.keras_generator_from_array(images=orig, labels=mask, batch_size=batch_size)
     
         while True:
             x, y = next(image_batch)
             _, ax = plt.subplots(1,2)
-            ax[0].imshow(x)
-            ax[1].imshow(y)
+            ax[0].imshow(x[0])
+            ax[1].imshow(y[0])
             ax[0].set_axis_off()
             ax[1].set_axis_off()
+            plt.show()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -123,7 +124,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=BATCH_SIZE,
+        default=1,
         help="""\
         Size of batch to use at every epoch."""
     )
