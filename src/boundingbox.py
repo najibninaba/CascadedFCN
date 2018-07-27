@@ -34,10 +34,13 @@ tqdm.monitor_interval = 0 # to silent warnings
 
 # Specify constants and directories
 # pylint: disable=line-too-long
-DIR_LAYER2_ORIG = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original-cropped/"
-DIR_LAYER2_MASK = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/mask-cropped/"
-FILENAME_ORIG_HEAD = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original/Wound_"
-FILENAME_MASK_HEAD = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-7/Wound_"
+DIR_ORIG = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original/"
+DIR_MASK3 = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-3/"
+DIR_MASK9 = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-9/"
+DIR_ORIG_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/original-cropped/"
+DIR_MASK9_CROPPED = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/masks-class-9-cropped/"
+DIR_OUTPUT = "/Users/raimibinkarim/Desktop/Cascaded-FCN-Data/augments/" # for debugging
+
 MIN_AREA = 50
 BOX_COLOR = (70, 173, 212)
 PADDING = 4 # pixels
@@ -64,8 +67,8 @@ def get_bounding_box(idx=-1):
     # print("Processing Wound " + str(idx))
 
     # pylint: disable=line-too-long
-    filename_orig = FILENAME_ORIG_HEAD + str(idx) + ".jpg"
-    filename_mask = FILENAME_MASK_HEAD + str(idx) + ".png"
+    filename_orig = DIR_ORIG + "Wound_" + str(idx) + ".png"
+    filename_mask = DIR_MASK9 + "Wound_" + str(idx) + ".png"
     # pylint: enable=line-too-long
 
     # Load original
@@ -156,7 +159,7 @@ def get_bounding_box(idx=-1):
         mask_dilated = cv2.dilate(mask_gray, kernel=KERNEL_DILATION)
 
     # Save image
-    imsave(DIR_LAYER2_ORIG + "Wound_" + str(idx) + ".jpg", orig)
+    imsave(DIR_ORIG_CROPPED + "Wound_" + str(idx) + ".jpg", orig)
 
     # Plot mask, orig, orig_cropped_rotated
     _, ax = plt.subplots(1,3)
@@ -175,11 +178,10 @@ def process_layer1_output():
     Takes in mask and orig images and output cropped originals to a directory
     """
     # Create directories if they do not exist
-    if not os.path.isdir(DIR_LAYER2_ORIG):
-        os.mkdir(DIR_LAYER2_ORIG)
-
-    # if not os.path.isdir(DIR_LAYER2_MASK):
-        # os.mkdir(DIR_LAYER2_MASK)
+    if not os.path.isdir(DIR_ORIG_CROPPED):
+        os.mkdir(DIR_ORIG_CROPPED)
+    if not os.path.isdir(DIR_MASK9_CROPPED):
+        os.mkdir(DIR_MASK9_CROPPED)
     
     # Get cropped images for all
     num_examples = 336
