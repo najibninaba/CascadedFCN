@@ -34,7 +34,7 @@ TODO
 
 ## Training
 
-TODO
+1. `train.py`
 
 ## Reference
 
